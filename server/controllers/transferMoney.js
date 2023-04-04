@@ -28,48 +28,72 @@ async function transferMoney(senderAccountId, recieverAccountId, amount, loggedI
 		const senderAccount = await UserAccount.findOne({ accountNumber: senderAccountId }).session(
 			session
 		);
-		const recieverAccount = await UserAccount.findOne({
+		const receiverAccount = await UserAccount.findOne({
 			accountNumber: recieverAccountId,
 		}).session(session);
-
-		console.log('🟢 loggedInUserId: ', loggedInUserId, 'senderAccountId: ', senderAccountId);
-		if (senderAccount.accountNumber !== loggedInUserId) {
-			throw new Error('You are not authorized to send money from this account');
-		}
 
 		if (!senderAccount) {
 			throw new Error('Invalid sender account id');
 		}
-		if (!recieverAccount) {
-			throw new Error('Invalid reciever account id');
+		if (!receiverAccount) {
+			throw new Error('Invalid receiver account id');
 		}
 		if (senderAccount.balance < amount) {
 			throw new Error('Insufficient funds');
 		}
-
+		if (senderAccount.accountNumber !== loggedInUserId) {
+			throw new Error('You are not authorized to send money from this account');
+		}
 		if (amount <= 0) {
-			throw new Error('amount can(t) be: ' + amount);
+			throw new Error('Amount must be greater than zero');
 		}
 		if (senderAccountId === recieverAccountId) {
 			throw new Error('You cannot send money to your own account');
 		}
 
-		senderAccount.balance -= amount;
-		recieverAccount.balance += amount;
-		senderAccount.transactions.push({
-			sender: senderAccount.name,
-			reciever: recieverAccount.name,
-			amount: amount,
-			date: new Date(),
-		});
+		const transactionOptions = { session };
 
-		await senderAccount.save();
-		await recieverAccount.save();
+		const updateSender = {
+			$inc: { balance: -amount },
+			$push: {
+				transactions: {
+					type: 'debit',
+					fromAccount: senderAccountId,
+					toAccount: recieverAccountId,
+					amount: amount,
+					date: new Date(),
+				},
+			},
+		};
+
+		const updateReceiver = {
+			$inc: { balance: amount },
+			$push: {
+				transactions: {
+					type: 'credit',
+					fromAccount: senderAccountId,
+					toAccount: recieverAccountId,
+					amount: amount,
+					date: new Date(),
+				},
+			},
+		};
+
+		await UserAccount.updateOne(
+			{ accountNumber: senderAccountId },
+			updateSender,
+			transactionOptions
+		);
+		await UserAccount.updateOne(
+			{ accountNumber: recieverAccountId },
+			updateReceiver,
+			transactionOptions
+		);
 
 		await session.commitTransaction();
 
 		console.log(
-			`$${amount} transferred successfully from ${senderAccount.name} to ${recieverAccount.name}`
+			`$${amount} transferred successfully from ${senderAccount.name} to ${receiverAccount.name}`
 		);
 		return true;
 	} catch (error) {

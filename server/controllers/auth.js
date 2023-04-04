@@ -31,8 +31,12 @@ module.exports.signin = async (req, res, next) => {
 
 		if (!isPinCorrect) return next(createError(400, 'Wrong Pin!'));
 
-		const token = jwt.sign({ loggedInUserId: user.accountNumber }, process.env.JWT);
-		const { pin, password, ...others } = user._doc;
+		const token = jwt.sign({ loggedInUserId: user.accountNumber }, process.env.JWT, {
+			expiresIn: '1h',
+		});
+
+		// below I am not sending the transacrions, password and pin to the client
+		const { transactions, pin, password, ...others } = user._doc;
 		console.log('🟢 token: ', token);
 		res.cookie('access_token', token, {
 			httpOnly: true,

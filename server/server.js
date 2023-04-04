@@ -46,7 +46,6 @@ app.get('/all', async (req, res, next) => {
 				arr.push(item.transactions);
 			}
 		});
-		console.table(arr[0]?.map((item) => item));
 		res.status(200).send(arr);
 	} catch (error) {
 		next(error);

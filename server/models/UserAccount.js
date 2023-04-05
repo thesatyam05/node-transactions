@@ -1,13 +1,6 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
-
-const transactionSchema = new Schema({
-	type: { type: String, enum: ['credit', 'debit'], required: true },
-	fromAccount: { type: Number, required: true },
-	toAccount: { type: Number, required: true },
-	amount: { type: Number, required: true },
-	date: { type: Date, default: Date.now },
-});
+// const Transaction = require('./Transaction.js');
 
 const userAccountSchema = new Schema({
 	accountNumber: { type: Number, required: true, unique: true },
@@ -18,10 +11,24 @@ const userAccountSchema = new Schema({
 	pin: { type: String, required: true },
 	role: {
 		type: String,
-		enum: ['admin', 'user', 'guest'],
-		default: 'guest',
+		enum: ['admin', 'user'],
+		default: 'user',
 	},
-	transactions: [transactionSchema],
+	transactions: [
+		{
+			type: {
+				type: String,
+				enum: ['credit', 'debit'],
+				required: true,
+			},
+			transactionId: {
+				// type: mongoose.Schema.Types.ObjectId,
+				// ref: 'Transaction',
+				type: String,
+				required: true,
+			},
+		},
+	],
 });
 
-module.exports = mongoose.model('UserAccount', userAccountSchema, 'transactionstestcollection');
+module.exports = mongoose.model('UserAccount', userAccountSchema, 'UserAccountsCollection');

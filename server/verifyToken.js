@@ -8,6 +8,7 @@ module.exports.verifyToken = (req, res, next) => {
 	jwt.verify(token, process.env.JWT, async (err, decodedToken) => {
 		if (err) return next(createError(403, 'Token is not valid!'));
 		req.user = decodedToken;
+		console.log('🟢 decodedToken: ', decodedToken, ' ---this is at verifyToken.js');
 		next();
 	});
 };

@@ -1,6 +1,6 @@
 # Node-Transactions
 
-wallet and transaction making system.
+secure wallet and transaction making system with authentication and role management.
 
 ## Tech Stack
 

@@ -20,6 +20,31 @@ module.exports.sendMoney = async (req, res, next) => {
 		const ress = await transferMoney(loggedInUserId, reciever, amount);
 		res.status(200).json({ message: ress });
 	} catch (err) {
+		if (err.message === 'Insufficient funds') {
+			res.status(400).json({ message: 'Insufficient funds' });
+			return next(createError(400, 'Insufficient funds'));
+		}
+		if (err.message === 'Invalid receiver account id') {
+			res.status(400).json({ message: 'Invalid receiver account id' });
+			return next(createError(400, 'Invalid receiver account id'));
+		}
+		next(err);
+	}
+};
+
+// passbook functions is for fetching all the transactions of the loggedin user
+module.exports.passbook = async (req, res, next) => {
+	const loggedInUserId = req.user.loggedInUserId;
+	try {
+		const user = await UserAccount.findOne({ accountNumber: loggedInUserId });
+		const transactionIds = user.transactions.map((transaction) => transaction.transactionId);
+		const result = await Transaction.find({ _id: { $in: transactionIds } });
+		const transactionsWithTypes = result.map((transaction) => {
+			const type = transaction.fromAccount === loggedInUserId ? 'debit' : 'credit';
+			return { ...transaction.toObject(), type };
+		});
+		res.send(transactionsWithTypes);
+	} catch (err) {
 		next(err);
 	}
 };
@@ -88,6 +113,7 @@ async function transferMoney(senderAccountId, recieverAccountId, amount) {
 	} catch (error) {
 		await session.abortTransaction();
 		console.error(error.message);
+		throw error;
 	} finally {
 		session.endSession();
 	}

@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const User = require('../models/UserAccount.js');
 const bcrypt = require('bcryptjs');
 const { createError } = require('../error.js');
@@ -22,6 +23,10 @@ module.exports.signup = async (req, res, next) => {
 		// res.status(200).send('User has been created!');
 		res.status(200).send(newUser);
 	} catch (err) {
+		if (err.code === 11000) {
+			res.status(400).json({ message: 'accountNumber already exists.' });
+			return next(createError(400, 'accountNumber already exists.'));
+		}
 		next(err);
 	}
 };

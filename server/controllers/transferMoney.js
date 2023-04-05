@@ -1,15 +1,24 @@
 const mongoose = require('mongoose');
 const UserAccount = require('../models/UserAccount.js');
 const Transaction = require('../models/Transaction.js');
-const jwt = require('jsonwebtoken');
+const { createError } = require('../error.js');
 
 module.exports.sendMoney = async (req, res, next) => {
 	try {
 		let loggedInUserId = req.user.loggedInUserId;
-		const { reciever, amount } = req.query;
-		console.log('🟢 loggedInUserId: ', loggedInUserId);
-		const ress = await transferMoney(loggedInUserId, parseInt(reciever), parseInt(amount));
-		res.send(ress);
+		// req.query has { reciever: '1', amount: '1' } because we passed in url query
+		const reciever = parseInt(req.query.reciever);
+		const amount = parseInt(req.query.amount);
+		if (loggedInUserId === reciever) {
+			res.status(405).json({ message: 'You cannot send money to your own account' });
+			return next(createError(405, 'You cannot send money to your own account'));
+		}
+		if (amount <= 0) {
+			res.status(422).json({ message: 'Amount must be greater than zero' });
+			return next(createError(422, 'Amount must be greater than zero'));
+		}
+		const ress = await transferMoney(loggedInUserId, reciever, amount);
+		res.status(200).json({ message: ress });
 	} catch (err) {
 		next(err);
 	}
@@ -20,12 +29,6 @@ async function transferMoney(senderAccountId, recieverAccountId, amount) {
 
 	try {
 		session.startTransaction();
-		if (senderAccountId === recieverAccountId) {
-			throw new Error('You cannot send money to your own account');
-		}
-		if (amount <= 0) {
-			throw new Error('Amount must be greater than zero');
-		}
 		const senderAccount = await UserAccount.findOne({ accountNumber: senderAccountId }).session(
 			session
 		);
@@ -80,13 +83,8 @@ async function transferMoney(senderAccountId, recieverAccountId, amount) {
 			updateReceiver,
 			transactionOptions
 		);
-
 		await session.commitTransaction();
-
-		console.log(
-			`$${amount} transferred successfully from ${senderAccount.name} to ${receiverAccount.name}`
-		);
-		return true;
+		return `💲${amount} transferred from ${senderAccount.name} ➡️ ${receiverAccount.name}`;
 	} catch (error) {
 		await session.abortTransaction();
 		console.error(error.message);

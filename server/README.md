@@ -2,6 +2,10 @@
 
 secure wallet and transaction making system with authentication and role management.
 
+## Authors
+
+- [@thesatyam05](https://www.github.com/thesatyam05)
+
 ## Tech Stack
 
 **Server:** Node, Express

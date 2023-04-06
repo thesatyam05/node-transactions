@@ -35,7 +35,6 @@ secure wallet and transaction making system with authentication and role managem
 | `email`         | `string` | **Required**. email                 |
 | `password`      | `string` | **Required**. password              |
 | `pin`           | `number` | **Required**. 6 digit pin           |
-
 for admin account
 | `role` | `string` | `admin` default: `user` |
 
